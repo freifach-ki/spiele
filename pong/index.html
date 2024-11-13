@@ -57,6 +57,14 @@
         let playerScore = 0;
         let computerScore = 0;
 
+        // Hindernisse
+        const obstacles = [];
+        const obstacleWidth = 20;
+        const obstacleHeight = 100;
+
+        // Timer für Hindernisse
+        let obstacleTimer = null;
+
         // Zeichne Paddle
         function drawPaddle(x, y, width, height) {
             ctx.fillStyle = '#fff';
@@ -70,6 +78,14 @@
             ctx.arc(x, y, radius, 0, Math.PI * 2, false);
             ctx.closePath();
             ctx.fill();
+        }
+
+        // Zeichne Hindernisse
+        function drawObstacles() {
+            ctx.fillStyle = '#ff0000'; // Rot für Hindernisse
+            obstacles.forEach(obstacle => {
+                ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            });
         }
 
         // Zeichne Scoreboard
@@ -94,25 +110,56 @@
             if (ball.x - ball.radius < player.x + player.width &&
                 ball.y > player.y &&
                 ball.y < player.y + player.height) {
-                ball.dx = Math.abs(ball.dx); // Sicherstellen, dass der Ball nach rechts abprallt
+                ball.dx = Math.abs(ball.dx); // Nach rechts abprallen
             }
 
             // Kollision mit Computer-Paddle
             if (ball.x + ball.radius > computer.x &&
                 ball.y > computer.y &&
                 ball.y < computer.y + computer.height) {
-                ball.dx = -Math.abs(ball.dx); // Sicherstellen, dass der Ball nach links abprallt
+                ball.dx = -Math.abs(ball.dx); // Nach links abprallen
             }
+
+            // Kollision mit Hindernissen
+            obstacles.forEach(obstacle => {
+                if (
+                    ball.x + ball.radius > obstacle.x &&
+                    ball.x - ball.radius < obstacle.x + obstacle.width &&
+                    ball.y + ball.radius > obstacle.y &&
+                    ball.y - ball.radius < obstacle.y + obstacle.height
+                ) {
+                    // Kollision festgestellt, Ballrichtung ändern
+                    // Bestimmen, von welcher Seite die Kollision kam
+                    const overlapLeft = ball.x + ball.radius - obstacle.x;
+                    const overlapRight = obstacle.x + obstacle.width - (ball.x - ball.radius);
+                    const overlapTop = ball.y + ball.radius - obstacle.y;
+                    const overlapBottom = obstacle.y + obstacle.height - (ball.y - ball.radius);
+                    const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+
+                    switch (minOverlap) {
+                        case overlapLeft:
+                        case overlapRight:
+                            ball.dx *= -1;
+                            break;
+                        case overlapTop:
+                        case overlapBottom:
+                            ball.dy *= -1;
+                            break;
+                    }
+                }
+            });
 
             // Punktestand
             if (ball.x - ball.radius < 0) {
                 computerScore++;
                 resetBall();
+                addObstacleAfterDelay();
             }
 
             if (ball.x + ball.radius > canvas.width) {
                 playerScore++;
                 resetBall();
+                addObstacleAfterDelay();
             }
         }
 
@@ -145,6 +192,7 @@
             drawPaddle(player.x, player.y, player.width, player.height);
             drawPaddle(computer.x, computer.y, computer.width, computer.height);
             drawBall(ball.x, ball.y, ball.radius);
+            drawObstacles();
             drawScore();
         }
 
@@ -171,6 +219,43 @@
             }
         }
 
+        // Funktion zum Hinzufügen eines neuen Hindernisses
+        function addObstacle() {
+            // Zufällige Y-Position, sodass das Hindernis vollständig im Canvas bleibt
+            const y = Math.random() * (canvas.height - obstacleHeight);
+            // Positioniere das Hindernis irgendwo in der Mitte horizontal, vermeide Paddles
+            const x = canvas.width / 2 - obstacleWidth / 2;
+
+            // Optional: Verhindere Überlappung mit bestehenden Hindernissen
+            const overlap = obstacles.some(obstacle => {
+                return !(x + obstacleWidth < obstacle.x ||
+                         x > obstacle.x + obstacle.width ||
+                         y + obstacleHeight < obstacle.y ||
+                         y > obstacle.y + obstacle.height);
+            });
+
+            if (!overlap) {
+                obstacles.push({
+                    x: x,
+                    y: y,
+                    width: obstacleWidth,
+                    height: obstacleHeight
+                });
+            }
+        }
+
+        // Funktion zum Hinzufügen eines Hindernisses nach einer Verzögerung von 5 Sekunden
+        function addObstacleAfterDelay() {
+            if (obstacleTimer) {
+                clearTimeout(obstacleTimer);
+            }
+            obstacleTimer = setTimeout(addObstacle, 5000);
+        }
+
+        // Zeichne Hindernisse sofort zu Beginn
+        // Optional: Du kannst auch sofort ein Hindernis hinzufügen oder nicht
+        // addObstacle();
+
         // Update Spiel
         function gameLoop() {
             movePlayer();
@@ -187,6 +272,12 @@
             resetBall();
             player.y = canvas.height / 2 - paddleHeight / 2;
             computer.y = canvas.height / 2 - paddleHeight / 2;
+            obstacles.length = 0; // Entfernt alle Hindernisse
+
+            // Stoppe den aktuellen Timer und starte einen neuen
+            if (obstacleTimer) {
+                clearTimeout(obstacleTimer);
+            }
         }
 
         // Starte das Spiel
