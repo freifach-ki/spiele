@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Pong-Spiel</title>
+    <title>Pong-Spiel für Zwei Spieler</title>
     <style>
         body {
             background-color: #000;
@@ -28,19 +28,22 @@
         // Paddle-Einstellungen
         const paddleWidth = 10;
         const paddleHeight = 100;
-        const player = {
-            x: 10, // Leicht versetzt vom Rand für bessere Sichtbarkeit
+        const paddleSpeed = 5;
+
+        const player1 = {
+            x: 10, // Linke Seite
             y: canvas.height / 2 - paddleHeight / 2,
             width: paddleWidth,
             height: paddleHeight,
-            dy: 5
+            dy: paddleSpeed
         };
-        const computer = {
-            x: canvas.width - paddleWidth - 10, // Leicht versetzt vom Rand
+
+        const player2 = {
+            x: canvas.width - paddleWidth - 10, // Rechte Seite
             y: canvas.height / 2 - paddleHeight / 2,
             width: paddleWidth,
             height: paddleHeight,
-            dy: 5
+            dy: paddleSpeed
         };
 
         // Ball-Einstellungen
@@ -54,8 +57,8 @@
         };
 
         // Scoreboard
-        let playerScore = 0;
-        let computerScore = 0;
+        let player1Score = 0;
+        let player2Score = 0;
 
         // Hindernisse
         const obstacles = [];
@@ -88,12 +91,19 @@
             });
         }
 
-        // Zeichne Scoreboard
-        function drawScore() {
+        // Zeichne Scoreboard und Steuerungsanweisungen
+        function drawUI() {
             ctx.fillStyle = '#fff';
+            ctx.font = '20px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('Player 1: W (hoch), Y (runter)', 20, 30);
+            ctx.textAlign = 'right';
+            ctx.fillText('Player 2: I (hoch), M (runter)', canvas.width - 20, 30);
+
+            // Punktestand
             ctx.font = '30px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText(`${playerScore} : ${computerScore}`, canvas.width / 2, 50);
+            ctx.fillText(`${player1Score} : ${player2Score}`, canvas.width / 2, 50);
         }
 
         // Bewege Ball
@@ -106,17 +116,17 @@
                 ball.dy *= -1;
             }
 
-            // Kollision mit Spieler-Paddle
-            if (ball.x - ball.radius < player.x + player.width &&
-                ball.y > player.y &&
-                ball.y < player.y + player.height) {
+            // Kollision mit Spieler1-Paddle
+            if (ball.x - ball.radius < player1.x + player1.width &&
+                ball.y > player1.y &&
+                ball.y < player1.y + player1.height) {
                 ball.dx = Math.abs(ball.dx); // Nach rechts abprallen
             }
 
-            // Kollision mit Computer-Paddle
-            if (ball.x + ball.radius > computer.x &&
-                ball.y > computer.y &&
-                ball.y < computer.y + computer.height) {
+            // Kollision mit Spieler2-Paddle
+            if (ball.x + ball.radius > player2.x &&
+                ball.y > player2.y &&
+                ball.y < player2.y + player2.height) {
                 ball.dx = -Math.abs(ball.dx); // Nach links abprallen
             }
 
@@ -129,7 +139,6 @@
                     ball.y - ball.radius < obstacle.y + obstacle.height
                 ) {
                     // Kollision festgestellt, Ballrichtung ändern
-                    // Bestimmen, von welcher Seite die Kollision kam
                     const overlapLeft = ball.x + ball.radius - obstacle.x;
                     const overlapRight = obstacle.x + obstacle.width - (ball.x - ball.radius);
                     const overlapTop = ball.y + ball.radius - obstacle.y;
@@ -151,13 +160,13 @@
 
             // Punktestand
             if (ball.x - ball.radius < 0) {
-                computerScore++;
+                player2Score++;
                 resetBall();
                 addObstacleAfterDelay();
             }
 
             if (ball.x + ball.radius > canvas.width) {
-                playerScore++;
+                player1Score++;
                 resetBall();
                 addObstacleAfterDelay();
             }
@@ -167,39 +176,26 @@
         function resetBall() {
             ball.x = canvas.width / 2;
             ball.y = canvas.height / 2;
-            ball.dx = ball.dx > 0 ? -ball.speed : ball.speed; // Richtung wechseln
-            ball.dy = ball.dy > 0 ? ball.speed : -ball.speed;
+            // Zufällige Richtung nach Reset
+            ball.dx = Math.random() < 0.5 ? -ball.speed : ball.speed;
+            ball.dy = Math.random() < 0.5 ? -ball.speed : ball.speed;
             ball.speed = 4;
-        }
-
-        // Bewege Computer Paddle
-        function moveComputer() {
-            const targetY = ball.y - (computer.height / 2);
-            if (computer.y < targetY) {
-                computer.y += computer.dy;
-            } else if (computer.y > targetY) {
-                computer.y -= computer.dy;
-            }
-
-            // Begrenzung des Computer-Paddles innerhalb des Canvas
-            if (computer.y < 0) computer.y = 0;
-            if (computer.y + computer.height > canvas.height) computer.y = canvas.height - computer.height;
         }
 
         // Zeichne alles
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawPaddle(player.x, player.y, player.width, player.height);
-            drawPaddle(computer.x, computer.y, computer.width, computer.height);
+            drawPaddle(player1.x, player1.y, player1.width, player1.height);
+            drawPaddle(player2.x, player2.y, player2.width, player2.height);
             drawBall(ball.x, ball.y, ball.radius);
             drawObstacles();
-            drawScore();
+            drawUI();
         }
 
-        // Steuerung des Spieler-Paddles
+        // Steuerung der Spieler-Paddles
         const keys = {};
         document.addEventListener('keydown', function(e) {
-            keys[e.key] = true;
+            keys[e.key.toLowerCase()] = true;
 
             // Neustart des Spiels mit der Leertaste
             if (e.code === 'Space') {
@@ -207,23 +203,30 @@
             }
         });
         document.addEventListener('keyup', function(e) {
-            keys[e.key] = false;
+            keys[e.key.toLowerCase()] = false;
         });
 
-        function movePlayer() {
-            if (keys['ArrowUp'] && player.y > 0) {
-                player.y -= player.dy;
+        function movePlayers() {
+            // Spieler 1: W (hoch), Y (runter)
+            if (keys['w'] && player1.y > 0) {
+                player1.y -= player1.dy;
             }
-            if (keys['ArrowDown'] && player.y + player.height < canvas.height) {
-                player.y += player.dy;
+            if (keys['y'] && player1.y + player1.height < canvas.height) {
+                player1.y += player1.dy;
+            }
+
+            // Spieler 2: I (hoch), M (runter)
+            if (keys['i'] && player2.y > 0) {
+                player2.y -= player2.dy;
+            }
+            if (keys['m'] && player2.y + player2.height < canvas.height) {
+                player2.y += player2.dy;
             }
         }
 
         // Funktion zum Hinzufügen eines neuen Hindernisses
         function addObstacle() {
-            // Zufällige Y-Position, sodass das Hindernis vollständig im Canvas bleibt
             const y = Math.random() * (canvas.height - obstacleHeight);
-            // Positioniere das Hindernis irgendwo in der Mitte horizontal, vermeide Paddles
             const x = canvas.width / 2 - obstacleWidth / 2;
 
             // Optional: Verhindere Überlappung mit bestehenden Hindernissen
@@ -252,26 +255,21 @@
             obstacleTimer = setTimeout(addObstacle, 5000);
         }
 
-        // Zeichne Hindernisse sofort zu Beginn
-        // Optional: Du kannst auch sofort ein Hindernis hinzufügen oder nicht
-        // addObstacle();
-
         // Update Spiel
         function gameLoop() {
-            movePlayer();
+            movePlayers();
             moveBall();
-            moveComputer();
             draw();
             requestAnimationFrame(gameLoop);
         }
 
         // Reset Spiel
         function resetGame() {
-            playerScore = 0;
-            computerScore = 0;
+            player1Score = 0;
+            player2Score = 0;
             resetBall();
-            player.y = canvas.height / 2 - paddleHeight / 2;
-            computer.y = canvas.height / 2 - paddleHeight / 2;
+            player1.y = canvas.height / 2 - paddleHeight / 2;
+            player2.y = canvas.height / 2 - paddleHeight / 2;
             obstacles.length = 0; // Entfernt alle Hindernisse
 
             // Stoppe den aktuellen Timer und starte einen neuen
