@@ -53,6 +53,10 @@
             dy: 4
         };
 
+        // Scoreboard
+        let playerScore = 0;
+        let computerScore = 0;
+
         // Zeichne Paddle
         function drawPaddle(x, y, width, height) {
             ctx.fillStyle = '#fff';
@@ -66,6 +70,14 @@
             ctx.arc(x, y, radius, 0, Math.PI * 2, false);
             ctx.closePath();
             ctx.fill();
+        }
+
+        // Zeichne Scoreboard
+        function drawScore() {
+            ctx.fillStyle = '#fff';
+            ctx.font = '30px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${playerScore} : ${computerScore}`, canvas.width / 2, 50);
         }
 
         // Bewege Ball
@@ -94,15 +106,13 @@
 
             // Punktestand
             if (ball.x - ball.radius < 0) {
+                computerScore++;
                 resetBall();
-                // Computer Punkt
-                // Hier kannst du den Punktestand des Computers erhöhen
             }
 
             if (ball.x + ball.radius > canvas.width) {
+                playerScore++;
                 resetBall();
-                // Spieler Punkt
-                // Hier kannst du den Punktestand des Spielers erhöhen
             }
         }
 
@@ -135,12 +145,18 @@
             drawPaddle(player.x, player.y, player.width, player.height);
             drawPaddle(computer.x, computer.y, computer.width, computer.height);
             drawBall(ball.x, ball.y, ball.radius);
+            drawScore();
         }
 
         // Steuerung des Spieler-Paddles
         const keys = {};
         document.addEventListener('keydown', function(e) {
             keys[e.key] = true;
+
+            // Neustart des Spiels mit der Leertaste
+            if (e.code === 'Space') {
+                resetGame();
+            }
         });
         document.addEventListener('keyup', function(e) {
             keys[e.key] = false;
@@ -162,6 +178,15 @@
             moveComputer();
             draw();
             requestAnimationFrame(gameLoop);
+        }
+
+        // Reset Spiel
+        function resetGame() {
+            playerScore = 0;
+            computerScore = 0;
+            resetBall();
+            player.y = canvas.height / 2 - paddleHeight / 2;
+            computer.y = canvas.height / 2 - paddleHeight / 2;
         }
 
         // Starte das Spiel
