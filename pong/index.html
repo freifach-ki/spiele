@@ -62,11 +62,15 @@
 
         // Hindernisse
         const obstacles = [];
-        const obstacleWidth = 20;
-        const obstacleHeight = 100;
+        const obstacleWidth = 7;  // Reduzierte Breite (ca. ein Drittel)
+        const obstacleHeight = 33; // Reduzierte Höhe (ca. ein Drittel)
+        const maxObstacles = 4; // Maximale Anzahl von Hindernissen
 
         // Timer für Hindernisse
         let obstacleTimer = null;
+
+        // Timer für Ballbeschleunigung
+        let speedIncreaseTimer = null;
 
         // Zeichne Paddle
         function drawPaddle(x, y, width, height) {
@@ -179,7 +183,6 @@
             // Zufällige Richtung nach Reset
             ball.dx = Math.random() < 0.5 ? -ball.speed : ball.speed;
             ball.dy = Math.random() < 0.5 ? -ball.speed : ball.speed;
-            ball.speed = 4;
         }
 
         // Zeichne alles
@@ -226,6 +229,8 @@
 
         // Funktion zum Hinzufügen eines neuen Hindernisses
         function addObstacle() {
+            if (obstacles.length >= maxObstacles) return; // Maximale Anzahl prüfen
+
             const y = Math.random() * (canvas.height - obstacleHeight);
             const x = canvas.width / 2 - obstacleWidth / 2;
 
@@ -255,6 +260,27 @@
             obstacleTimer = setTimeout(addObstacle, 5000);
         }
 
+        // Funktion zum Beschleunigen des Balls um 5% alle 10 Sekunden
+        function increaseBallSpeed() {
+            ball.speed *= 1.05; // 5% Geschwindigkeitserhöhung
+            // Update der dx und dy entsprechend der neuen Geschwindigkeit
+            const angle = Math.atan2(ball.dy, ball.dx);
+            ball.dx = ball.speed * Math.cos(angle);
+            ball.dy = ball.speed * Math.sin(angle);
+        }
+
+        // Timer für Ballbeschleunigung starten
+        function startSpeedIncreaseTimer() {
+            speedIncreaseTimer = setInterval(increaseBallSpeed, 10000); // Alle 10 Sekunden
+        }
+
+        // Funktion zum Stoppen des Ballbeschleunigungs-Timers
+        function stopSpeedIncreaseTimer() {
+            if (speedIncreaseTimer) {
+                clearInterval(speedIncreaseTimer);
+            }
+        }
+
         // Update Spiel
         function gameLoop() {
             movePlayers();
@@ -276,10 +302,24 @@
             if (obstacleTimer) {
                 clearTimeout(obstacleTimer);
             }
+
+            // Stoppe den Ballbeschleunigungs-Timer und starte ihn neu
+            stopSpeedIncreaseTimer();
+            ball.speed = 4;
+            ball.dx = Math.random() < 0.5 ? -ball.speed : ball.speed;
+            ball.dy = Math.random() < 0.5 ? -ball.speed : ball.speed;
+            startSpeedIncreaseTimer();
+        }
+
+        // Initialisiere das Spiel
+        function init() {
+            resetGame();
+            startSpeedIncreaseTimer();
+            gameLoop();
         }
 
         // Starte das Spiel
-        gameLoop();
+        init();
     </script>
 </body>
 </html>
